@@ -20,8 +20,7 @@ const updateContactSchema = Joi.object({
 }).or("name", "email", "phone");
 
 router.get("/", async (req, res, next) => {
-  const allContacts = await contacts.listContacts();
-  res.json(allContacts);
+  
 });
 
 router.get("/:contactId", async (req, res, next) => {

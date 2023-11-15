@@ -1,5 +1,14 @@
-const app = require('./app')
+const app = require("./app");
+const connection = require("./config/db");
 
-app.listen(3000, () => {
-  console.log("Server running. Use our API on port: 3000")
-})
+const PORT = 3000;
+
+connection
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`SERVER RUNNING ON PORT: ${PORT}`);
+    });
+  })
+  .catch((err) =>
+    console.log(`ERROR: ${err}, error en conexion con base de datos`)
+  );
