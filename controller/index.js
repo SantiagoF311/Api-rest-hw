@@ -3,9 +3,9 @@ const contactModel = require("../service/schemas/contacts");
 
 const getAllContacts = async (req, res, next) => {
   try {
-    const contact = await contacts.listContacts();
+    const contact = await contacts.listContacts(req.user._id);
     res.json({
-      status: "succes",
+      status: "success",
       code: 200,
       data: {
         contact,
@@ -21,15 +21,24 @@ const getContactById = async (req, res, next) => {
   try {
     const contactId = req.params.contactId;
     const contact = await contacts.getContactById(contactId);
+
     if (contact) {
+      if (contact.owner.toString() !== req.user._id.toString()) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to access this contact" });
+      }
+
       res.json({
-        status: "succes",
+        status: "success",
         code: 200,
         data: {
           contact,
         },
       });
-    } else return res.status(404).json({ message: "Contact not found" });
+    } else {
+      return res.status(404).json({ message: "Contact not found" });
+    }
   } catch (error) {
     console.error(error);
     next(error);
@@ -43,7 +52,10 @@ const addContact = async (req, res, next) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const newContact = await contacts.addContact(req.body);
+    const newContact = await contacts.addContact({
+      ...req.body,
+      owner: req.user._id,
+    });
     res.status(201).json(newContact);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -53,15 +65,22 @@ const addContact = async (req, res, next) => {
 const deleteContact = async (req, res, next) => {
   try {
     const contactId = req.params.contactId;
-    const contact = await contacts.removeContact(contactId);
+    const contact = await contacts.getContactById(contactId);
 
     if (contact) {
+      if (contact.owner.toString() !== req.user._id.toString()) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this contact" });
+      }
+
+      const deletedContact = await contacts.removeContact(contactId);
       res.json({
-        status: "succes",
+        status: "success",
         code: 200,
         message: "Contact deleted",
         data: {
-          contact,
+          contact: deletedContact,
         },
       });
     } else {
@@ -84,12 +103,16 @@ const updateContact = async (req, res, next) => {
         .json({ message: "El cuerpo de la solicitud no puede estar vacío." });
     }
 
-    if ("favorite" in body) {
+    const contact = await contacts.getContactById(contactId);
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    if (contact.owner.toString() !== req.user._id.toString()) {
       return res
-        .status(400)
-        .json({
-          message: "No se permite actualizar el campo 'favorite' en esta ruta.",
-        });
+        .status(403)
+        .json({ message: "Not authorized to update this contact" });
     }
 
     const { error } = contactModel.validateUpdate(body);
@@ -100,30 +123,24 @@ const updateContact = async (req, res, next) => {
 
     const updatedContact = await contacts.updateContact(contactId, body);
 
-    if (!updatedContact) {
-      return res.status(404).json({ message: "Contacto no encontrado" });
-    }
-
     res.json({
-      message: "Contacto actualizado correctamente:",
+      message: "Contact updated successfully:",
       updatedContact,
     });
   } catch (error) {
-    console.error("Error en updateContact:", error);
+    console.error("Error in updateContact:", error);
 
     if (error.isJoi) {
       return res.status(400).json({ message: error.message });
     }
 
-    if (error.message === "Contacto no encontrado") {
+    if (error.message === "Contact not found") {
       return res.status(404).json({ message: error.message });
     }
 
-    res.status(500).json({ message: "Error interno del servidor" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 const updateStatusContact = async (req, res, next) => {
   try {
@@ -142,13 +159,23 @@ const updateStatusContact = async (req, res, next) => {
     );
 
     if (invalidFields.length > 0) {
+      return res.status(400).json({
+        message: `No se permiten cambios en los campos: ${invalidFields.join(
+          ", "
+        )}`,
+      });
+    }
+
+    const contact = await contacts.getContactById(contactId);
+
+    if (!contact) {
+      return res.status(404).json({ message: "Contacto no encontrado" });
+    }
+
+    if (contact.owner.toString() !== req.user._id.toString()) {
       return res
-        .status(400)
-        .json({
-          message: `No se permiten cambios en los campos: ${invalidFields.join(
-            ", "
-          )}`,
-        });
+        .status(403)
+        .json({ message: "Not authorized to update this contact's status" });
     }
 
     const updatedStatus = await contacts.updateStatusContact(contactId, body);
@@ -173,7 +200,6 @@ const updateStatusContact = async (req, res, next) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
-
 
 module.exports = {
   getAllContacts,

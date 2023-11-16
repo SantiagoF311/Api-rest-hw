@@ -1,8 +1,8 @@
 const contactModel = require("./schemas/contacts");
 
-const listContacts = async () => {
+const listContacts = async (userId) => {
   try {
-    const result = await contactModel.find();
+    const result = await contactModel.find({ owner: userId });
     return result;
   } catch (error) {
     console.error("Error in listContacts:", error);

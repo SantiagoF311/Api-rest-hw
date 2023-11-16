@@ -1,17 +1,39 @@
 const express = require("express");
 const router = express.Router();
-const ctrlContact = require("../controller/index");
+const contactCtrl = require("../controller/index");
+const authCtrl = require("../controller/auth");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.get("/", ctrlContact.getAllContacts);
+router.get("/", authMiddleware.checkToken, contactCtrl.getAllContacts);
 
-router.get("/:contactId", ctrlContact.getContactById);
+router.get(
+  "/:contactId",
+  authMiddleware.checkToken,
+  contactCtrl.getContactById
+);
 
-router.post("/", ctrlContact.addContact);
+router.post("/", authMiddleware.checkToken, contactCtrl.addContact);
 
-router.delete("/:contactId", ctrlContact.deleteContact);
+router.delete(
+  "/:contactId",
+  authMiddleware.checkToken,
+  contactCtrl.deleteContact
+);
 
-router.put("/:contactId", ctrlContact.updateContact);
+router.put("/:contactId", authMiddleware.checkToken, contactCtrl.updateContact);
 
-router.put("/:contactId/favorite", ctrlContact.updateStatusContact);
+router.put(
+  "/:contactId/favorite",
+  authMiddleware.checkToken,
+  contactCtrl.updateStatusContact
+);
+
+router.post("/signup", authCtrl.signUp);
+
+router.post("/login", authCtrl.signIn);
+
+router.get("/logout", authMiddleware.checkToken, authCtrl.signOut);
+
+router.get("/current", authMiddleware.checkToken, authCtrl.getCurrentUser);
 
 module.exports = router;
