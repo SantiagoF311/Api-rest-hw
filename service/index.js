@@ -12,9 +12,17 @@ const listContacts = async (userId) => {
 
 const getContactById = async (contactId) => {
   try {
-    return await contactModel.findById(contactId);
+    const contact = await contactModel.findById(contactId);
+
+    if (!contact) {
+      throw new Error(`Contact with ID ${contactId} not found`);
+    }
+
+    return contact;
   } catch (error) {
-    throw new Error("Error finding contact by ID in the database");
+    throw new Error(
+      `Error finding contact by ID in the database: ${error.message}`
+    );
   }
 };
 

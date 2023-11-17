@@ -13,7 +13,7 @@ const checkToken = async (req, res, next) => {
 
     const user = await userModel.findOne({
       _id: decoded.userId,
-      token,
+      token: { $ne: null },
     });
 
     if (!user) {

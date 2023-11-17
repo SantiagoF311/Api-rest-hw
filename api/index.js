@@ -4,6 +4,10 @@ const contactCtrl = require("../controller/index");
 const authCtrl = require("../controller/auth");
 const authMiddleware = require("../middleware/authMiddleware");
 
+router.get("/logout", authMiddleware.checkToken, authCtrl.signOut);
+
+router.get("/current", authMiddleware.checkToken, authCtrl.getCurrentUser);
+
 router.get("/", authMiddleware.checkToken, contactCtrl.getAllContacts);
 
 router.get(
@@ -31,9 +35,5 @@ router.put(
 router.post("/signup", authCtrl.signUp);
 
 router.post("/login", authCtrl.signIn);
-
-router.get("/logout", authMiddleware.checkToken, authCtrl.signOut);
-
-router.get("/current", authMiddleware.checkToken, authCtrl.getCurrentUser);
 
 module.exports = router;

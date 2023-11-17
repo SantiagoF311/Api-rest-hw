@@ -20,28 +20,29 @@ const getAllContacts = async (req, res, next) => {
 const getContactById = async (req, res, next) => {
   try {
     const contactId = req.params.contactId;
+
     const contact = await contacts.getContactById(contactId);
 
-    if (contact) {
-      if (contact.owner.toString() !== req.user._id.toString()) {
-        return res
-          .status(403)
-          .json({ message: "Not authorized to access this contact" });
-      }
-
-      res.json({
-        status: "success",
-        code: 200,
-        data: {
-          contact,
-        },
-      });
-    } else {
+    if (!contact) {
       return res.status(404).json({ message: "Contact not found" });
     }
+
+    if (contact.owner.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to access this contact" });
+    }
+
+    res.json({
+      status: "success",
+      code: 200,
+      data: {
+        contact,
+      },
+    });
   } catch (error) {
-    console.error(error);
-    next(error);
+    console.error("Error in getContactById:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
