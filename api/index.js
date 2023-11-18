@@ -1,4 +1,5 @@
 const express = require("express");
+const upload = require("./multerConfig");
 const router = express.Router();
 const contactCtrl = require("../controller/index");
 const authCtrl = require("../controller/auth");
@@ -35,5 +36,12 @@ router.put(
 router.post("/signup", authCtrl.signUp);
 
 router.post("/login", authCtrl.signIn);
+
+router.patch(
+  "/users/avatars",
+  authMiddleware.checkToken,
+  upload.single("avatar"),
+  authCtrl.updateAvatar
+);
 
 module.exports = router;

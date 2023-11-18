@@ -1,10 +1,18 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const jimp = require("jimp");
+const path = require("path");
+const gravatar = require("gravatar");
 const userModel = require("../service/schemas/users");
 
 const signUp = async (req, res, next) => {
   try {
     const { error } = userModel.validateAdd(req.body);
+    const avatarURL = gravatar.url(req.body.email, {
+      s: "250",
+      r: "pg",
+      d: "mm",
+    });
 
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
@@ -21,12 +29,14 @@ const signUp = async (req, res, next) => {
     const newUser = await userModel.create({
       email: req.body.email,
       password: hashedPassword,
+      avatarURL,
     });
 
     res.status(201).json({
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL
       },
     });
   } catch (error) {
@@ -101,9 +111,33 @@ const getCurrentUser = async (req, res, next) => {
   }
 };
 
+const updateAvatar = async (req, res, next) => {
+  try {
+    const avatarPath = path.join(
+      __dirname,
+      `../public/avatars/${req.file.filename}`
+    );
+
+    const image = await jimp.read(avatarPath);
+    await image.resize(250, 250);
+    await image.write(avatarPath);
+
+    req.user.avatarURL = `/avatars/${req.file.filename}`;
+    await req.user.save();
+
+    res.status(200).json({
+      avatarURL: req.user.avatarURL,
+    });
+  } catch (error) {
+    console.error("Error in updateAvatar:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   signUp,
   signIn,
   signOut,
   getCurrentUser,
+  updateAvatar,
 };
